@@ -5,25 +5,54 @@ const verifyToken = async (req, res, next) => {
     const cookieHeader = req.headers.cookie || '';
     console.log('🍪 RAW COOKIE HEADER:', cookieHeader);
 
-
+    // Production এ __Secure- prefix আসে, development এ আসে না
+    const match = cookieHeader.match(/(?:__Secure-)?better-auth\.session_token=([^;]+)/);
     
-    const match = cookieHeader.match(/better-auth\.session_token=([^;]+)/);
-    if (!match) return res.status(401).json({ message: 'Unauthorized' });
+    if (!match) {
+      console.log('❌ No session token found in cookies');
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     const rawValue = decodeURIComponent(match[1]);
     const sessionToken = rawValue.split('.')[0];
+    
+    console.log('🔑 Session token:', sessionToken?.substring(0, 20) + '...');
 
     const db = mongoose.connection.db;
-    const session = await db.collection('session').findOne({ token: sessionToken });
+    
+    // sessions collection এ খোঁজো
+    let session = await db.collection('sessions').findOne({ token: sessionToken });
+    
+    // না পেলে session collection এ খোঁজো
+    if (!session) {
+      session = await db.collection('session').findOne({ token: sessionToken });
+    }
 
-    if (!session) return res.status(401).json({ message: 'Unauthorized' });
+    if (!session) {
+      console.log('❌ Session not found in DB');
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     if (new Date(session.expiresAt) < new Date()) {
       return res.status(401).json({ message: 'Session expired' });
     }
 
-    const user = await db.collection('user').findOne({ _id: session.userId });
-    if (!user) return res.status(401).json({ message: 'Unauthorized' });
-    if (user.isBlocked) return res.status(403).json({ message: 'Account blocked' });
+    // users collection এ খোঁজো
+    let user = await db.collection('users').findOne({ _id: session.userId });
+    
+    // না পেলে user collection এ খোঁজো
+    if (!user) {
+      user = await db.collection('user').findOne({ _id: session.userId });
+    }
+
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Account blocked' });
+    }
 
     req.user = {
       id: user._id.toString(),
@@ -42,7 +71,9 @@ const verifyToken = async (req, res, next) => {
 };
 
 const verifyAdmin = (req, res, next) => {
-  if (req.user?.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
   next();
 };
 
