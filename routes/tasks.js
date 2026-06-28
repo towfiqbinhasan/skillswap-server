@@ -3,7 +3,7 @@ const router = express.Router();
 const Task = require('../models/Task');
 const { verifyToken } = require('../middleware/verifyToken');
 
-// সব open tasks (Browse Tasks page)
+
 router.get('/', async (req, res) => {
   try {
     const { search, category, page = 1, limit = 9 } = req.query;
