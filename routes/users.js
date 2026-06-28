@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
 
-// সব users (Admin)
+
 router.get('/', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const users = await User.find().select('-password');
@@ -13,7 +13,7 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
-// Top freelancers (Home page)
+
 router.get('/top-freelancers', async (req, res) => {
   try {
     const freelancers = await User.find({ role: 'freelancer', isBlocked: false })
