@@ -10,4 +10,6 @@ const paymentSchema = new mongoose.Schema({
   paid_at: { type: Date, default: Date.now },
 });
 
+
+
 module.exports = mongoose.model('Payment', paymentSchema);
