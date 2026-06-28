@@ -58,12 +58,16 @@ router.get('/client/:email', verifyToken, async (req, res) => {
 // Task বানানো
 router.post('/', verifyToken, async (req, res) => {
   try {
+    console.log('📝 Creating task with data:', JSON.stringify(req.body));
     const task = await Task.create(req.body);
+    console.log('✅ Task created:', task._id);
     res.status(201).json(task);
   } catch (err) {
+    console.error('❌ Task create error:', err.message);
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // Task update
 router.put('/:id', verifyToken, async (req, res) => {
