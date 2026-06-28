@@ -3,27 +3,35 @@ const mongoose = require('mongoose');
 const verifyToken = async (req, res, next) => {
   try {
     const cookieHeader = req.headers.cookie || '';
-    console.log('🍪 RAW COOKIE HEADER:', cookieHeader);
-
-    // Production এ __Secure- prefix আসে, development এ আসে না
-    const match = cookieHeader.match(/(?:__Secure-)?better-auth\.session_token=([^;]+)/);
+    const authHeader = req.headers.authorization || '';
     
-    if (!match) {
-      console.log('❌ No session token found in cookies');
+    let sessionToken = null;
+
+    // 1. Authorization header থেকে token নাও
+    if (authHeader.startsWith('Bearer ')) {
+      sessionToken = authHeader.replace('Bearer ', '').trim();
+      console.log('🔑 Token from Authorization header');
+    }
+
+    // 2. Cookie থেকে token নাও
+    if (!sessionToken) {
+      const match = cookieHeader.match(/(?:__Secure-)?better-auth\.session_token=([^;]+)/);
+      if (match) {
+        const rawValue = decodeURIComponent(match[1]);
+        sessionToken = rawValue.split('.')[0];
+        console.log('🍪 Token from cookie');
+      }
+    }
+
+    if (!sessionToken) {
+      console.log('❌ No session token found');
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const rawValue = decodeURIComponent(match[1]);
-    const sessionToken = rawValue.split('.')[0];
-    
-    console.log('🔑 Session token:', sessionToken?.substring(0, 20) + '...');
-
     const db = mongoose.connection.db;
-    
+
     // sessions collection এ খোঁজো
     let session = await db.collection('sessions').findOne({ token: sessionToken });
-    
-    // না পেলে session collection এ খোঁজো
     if (!session) {
       session = await db.collection('session').findOne({ token: sessionToken });
     }
@@ -37,16 +45,13 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: 'Session expired' });
     }
 
-    // users collection এ খোঁজো
+    // user খোঁজো
     let user = await db.collection('users').findOne({ _id: session.userId });
-    
-    // না পেলে user collection এ খোঁজো
     if (!user) {
       user = await db.collection('user').findOne({ _id: session.userId });
     }
 
     if (!user) {
-      console.log('❌ User not found');
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
