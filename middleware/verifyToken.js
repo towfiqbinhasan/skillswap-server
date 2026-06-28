@@ -11,6 +11,7 @@ const verifyToken = async (req, res, next) => {
     if (authHeader.startsWith('Bearer ')) {
       sessionToken = authHeader.replace('Bearer ', '').trim();
       console.log('🔑 Token from Authorization header');
+      console.log('🔍 Token value:', sessionToken?.substring(0, 15) + '...');
     }
 
     // 2. Cookie থেকে token নাও
@@ -20,6 +21,7 @@ const verifyToken = async (req, res, next) => {
         const rawValue = decodeURIComponent(match[1]);
         sessionToken = rawValue.split('.')[0];
         console.log('🍪 Token from cookie');
+        console.log('🔍 Token value:', sessionToken?.substring(0, 15) + '...');
       }
     }
 
@@ -31,17 +33,23 @@ const verifyToken = async (req, res, next) => {
     const db = mongoose.connection.db;
 
     // sessions collection এ খোঁজো
+    console.log('🔎 Searching in sessions collection...');
     let session = await db.collection('sessions').findOne({ token: sessionToken });
+    
     if (!session) {
+      console.log('🔎 Searching in session collection...');
       session = await db.collection('session').findOne({ token: sessionToken });
     }
 
     if (!session) {
-      console.log('❌ Session not found in DB');
+      console.log('❌ Session not found in DB for token:', sessionToken?.substring(0, 15));
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    console.log('✅ Session found!');
+
     if (new Date(session.expiresAt) < new Date()) {
+      console.log('❌ Session expired');
       return res.status(401).json({ message: 'Session expired' });
     }
 
@@ -52,8 +60,11 @@ const verifyToken = async (req, res, next) => {
     }
 
     if (!user) {
+      console.log('❌ User not found');
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
+    console.log('✅ User found:', user.email);
 
     if (user.isBlocked) {
       return res.status(403).json({ message: 'Account blocked' });
