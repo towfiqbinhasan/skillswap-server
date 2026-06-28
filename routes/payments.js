@@ -6,7 +6,7 @@ const Task = require('../models/Task');
 const Proposal = require('../models/Proposal');
 const { verifyToken } = require('../middleware/verifyToken');
 
-// Stripe Checkout Session বানানো
+
 router.post('/create-checkout-session', verifyToken, async (req, res) => {
   try {
     const { task_id, freelancer_email, amount, task_title } = req.body;
