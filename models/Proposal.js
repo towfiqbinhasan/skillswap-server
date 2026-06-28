@@ -10,4 +10,6 @@ const proposalSchema = new mongoose.Schema({
   submitted_at: { type: Date, default: Date.now },
 });
 
+
+
 module.exports = mongoose.model('Proposal', proposalSchema);
