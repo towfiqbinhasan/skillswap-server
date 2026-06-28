@@ -5,6 +5,8 @@ const verifyToken = async (req, res, next) => {
     const cookieHeader = req.headers.cookie || '';
     console.log('🍪 RAW COOKIE HEADER:', cookieHeader);
 
+
+    
     const match = cookieHeader.match(/better-auth\.session_token=([^;]+)/);
     if (!match) return res.status(401).json({ message: 'Unauthorized' });
 
