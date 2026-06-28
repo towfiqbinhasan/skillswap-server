@@ -73,6 +73,33 @@ router.post('/', verifyToken, async (req, res) => {
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+    // deliverable submit হলে payment record বানাও
+    if (req.body.status === 'completed' && req.body.deliverable_url) {
+      const Payment = require('../models/Payment');
+      const Proposal = require('../models/Proposal');
+
+      const proposal = await Proposal.findOne({
+        task_id: req.params.id,
+        status: 'accepted'
+      });
+
+      if (proposal) {
+        const existingPayment = await Payment.findOne({ task_id: req.params.id });
+        if (!existingPayment) {
+          await Payment.create({
+            client_email: task.client_email,
+            freelancer_email: proposal.freelancer_email,
+            task_id: req.params.id,
+            amount: proposal.proposed_budget,
+            transaction_id: `deliverable_${Date.now()}`,
+            payment_status: 'completed',
+            paid_at: new Date()
+          });
+        }
+      }
+    }
+
     res.json(task);
   } catch (err) {
     res.status(500).json({ message: err.message });
