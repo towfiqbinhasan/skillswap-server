@@ -4,8 +4,6 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-
-
 const app = express();
 
 // ✅ Middleware
@@ -18,6 +16,10 @@ app.use(cors({
   ],
   credentials: true
 }));
+
+app.use(express.json());
+app.use(cookieParser());
+
 // ✅ Routes
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
